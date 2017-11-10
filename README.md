@@ -1,7 +1,7 @@
 # Computer Graphics
 
 
-##Index page - [link](https://bevis00.github.io/ComputerGraphics/index.html)
+## Index page - [link](https://bevis00.github.io/ComputerGraphics/index.html)
 
 
 ### Homework 1 : [time-based animation](https://bevis00.github.io/ComputerGraphics/hw1.html)
