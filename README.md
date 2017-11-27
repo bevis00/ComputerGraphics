@@ -28,7 +28,7 @@
   - 砲彈發射：
     - 初始位置：砲口 發射方向：砲管方向 發射速率：固定
     - 砲彈打到地面(y = 0)即停止。停止後，才可以發射下一發砲彈。
-    - [雜研與專題生] write "class" for cannonball, 使得可以發射多發砲彈, [reference]https://docs.google.com/presentation/d/17tTiIvHCruuUXcSnboq1dPTnf0tQtg53xqUdj3nE2zw/edit#slide=id.p
+    - [雜研與專題生] write "class" for cannonball, 使得可以發射多發砲彈, [reference](https://docs.google.com/presentation/d/17tTiIvHCruuUXcSnboq1dPTnf0tQtg53xqUdj3nE2zw/edit#slide=id.p)
   - 簡單遊戲：
     - 坦克在中線(x = 0)上前後運動
     - 地圖的兩端(x = 100, x = -100)隨機產生標靶
