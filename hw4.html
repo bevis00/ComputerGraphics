@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+
+.dbutton {
+  padding: 4px;
+  background: green;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dbutton.selected {
+  background: orange;
+}
+
+
+</style>
+</head>
+
+<body> 
+
+<h1 style="text-align:center"> Computer Graphics 
+<br>Homework 4 <br>(W、A、D to control)
+</h1>
+
+<hr>
+<div id="container2" style="background:pink; float:left; margin:3px; width:45vw; height:45vw"></div>
+<div id="container" style="float:right; margin:3px; width:45vw; height:45vw">
+</div>
+<br>
+<hr style="clear:both">
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/88/three.min.js"></script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+
+<script>
+
+var camera, scene, renderer;
+var camera2, scene2, renderer2;
+var controls;
+var keyboard = new KeyboardState();
+
+var car = new THREE.Object3D();
+var go = 0;
+var change = 0;
+var upTemp = new THREE.Vector3();
+var cameraOffset;
+var changeX = 0, changeY = 1, changeZ = 0;
+var vP = new THREE.Vector3(1, 0, 0);
+
+init();
+animate();
+
+function buildCarModel() {
+
+  var geometry = new THREE.Geometry();
+  // add vertices
+  geometry.vertices.push(new THREE.Vector3(0, 0, 10));
+  geometry.vertices.push(new THREE.Vector3(25, 0, 0));
+  geometry.vertices.push(new THREE.Vector3(0, 13, 0));
+  geometry.vertices.push(new THREE.Vector3(0, 0, -10));
+
+  // add faces
+  geometry.faces.push(new THREE.Face3(0, 1, 2));
+  geometry.faces.push(new THREE.Face3(1, 2, 3));
+  geometry.faces.push(new THREE.Face3(0, 1, 3));
+  geometry.faces.push(new THREE.Face3(0, 2, 3));
+
+  // build necessary information
+  geometry.computeBoundingSphere();
+  geometry.computeFaceNormals();
+  geometry.computeVertexNormals();
+
+  var mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial({
+    side: THREE.DoubleSide
+  }));
+
+  return mesh;
+  
+}
+
+function init() {
+
+  var ww = $("#container").innerWidth();
+  var hh = $("#container").innerHeight();
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(ww, hh);
+  renderer.setClearColor(0x888888);
+  $("#container").append(renderer.domElement);
+
+  renderer2 = new THREE.WebGLRenderer();
+  renderer2.setSize(ww, hh);
+  renderer2.setClearColor(0x888800);
+  $("#container2").append(renderer2.domElement);
+
+  ////////////////////////////////////////////////
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(90, ww / hh, 1, 1000);
+  camera.position.z = 50;
+
+  camera2 = new THREE.PerspectiveCamera(50, ww / hh, 1, 1000);
+  camera2.position.set(0, 400, 0);
+
+  //scene.add(new THREE.AxisHelper(25));
+
+  var grid = new THREE.GridHelper(300, 30, 'red', 'white');
+
+  scene.add(grid);
+  controls = new THREE.OrbitControls(camera2, renderer2.domElement);
+  
+  var ambient = new THREE.AmbientLight(0x444444);
+  scene.add(ambient);
+
+  var directionalLight = new THREE.DirectionalLight(0xffffff);
+  directionalLight.position.set(0, 1, 1).normalize();
+  scene.add(directionalLight);
+
+  //////////////////////////////////////////////////////////////////////////////
+  
+  ////////////// model //////////////
+
+  var onProgress = function(xhr) {
+    if (xhr.lengthComputable) {
+      var percentComplete = xhr.loaded / xhr.total * 100;
+      console.log(Math.round(percentComplete, 2) + '% downloaded');
+    }
+  };
+
+  var onError = function(xhr) {};
+
+  //THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
+
+  var mtlLoader = new THREE.MTLLoader();
+  //mtlLoader.setPath('resources/');
+  mtlLoader.load('https://bevis00.github.io/obj-resources/cars/1967-shelby-ford-mustang/1967-shelby-ford-mustang.mtl', function(materials) {
+
+    materials.preload();
+
+    var objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(materials);
+    //objLoader.setPath('resources/');
+    objLoader.load('https://bevis00.github.io/obj-resources/cars/1967-shelby-ford-mustang/1967-shelby-ford-mustang.obj', function(object) {
+
+      var theObject = unitize(object, 30);
+			theObject.rotation.y = -Math.PI / 2;
+      car.add(theObject);
+      scene.add(car);
+
+      //scene.add(new THREE.BoxHelper(theObject));
+
+      ////////////// MATERIAL ADJUSTMENT for porsche //////////////
+      // transparent window: double-side fix
+      object.traverse(
+        function(mesh) {
+          if (mesh instanceof THREE.Mesh) {
+            mesh.material.side = THREE.DoubleSide;
+          }
+        });
+
+
+    }, onProgress, onError);
+
+  });
+
+  //
+  
+  ///////////////////////////////////////////////////////////////////////////////
+  
+	var cylinder = new THREE.Mesh( new THREE.CylinderGeometry( 25, 25, 8, 32 ), new THREE.MeshBasicMaterial( {color: 0xffff00} ) );
+  cylinder.position.set(70, 4, -80);
+  
+  var cylinder2 = new THREE.Mesh( new THREE.CylinderGeometry( 25, 25, 8, 32 ), new THREE.MeshBasicMaterial({color:0x4286f4}) );
+  cylinder2.position.set(-70, 4, 50);
+  
+  var cylinder3 = new THREE.Mesh( new THREE.CylinderGeometry( 50, 50, 8, 32 ), new THREE.MeshBasicMaterial({color:0xcd41f4}) );
+  cylinder3.position.set(75, 4, 75);
+  
+  var cylinder4 = new THREE.Mesh( new THREE.CylinderGeometry( 40, 40, 8, 32 ), new THREE.MeshBasicMaterial({color:0xf46741}) );
+  cylinder4.position.set(-100, 4, -70);
+  
+	scene.add( cylinder, cylinder2, cylinder3, cylinder4 );
+  
+  ///////////////////////////////////////////////////////////////////////////////
+
+  window.addEventListener('resize', onWindowResize, false);
+
+}
+
+function unitize(object, targetSize) {
+
+	  // find bounding box of 'object'
+	  var box3 = new THREE.Box3();
+	  box3.setFromObject(object);
+	  var size = new THREE.Vector3();
+	  size.subVectors(box3.max, box3.min);
+	  var center = new THREE.Vector3();
+	  center.addVectors(box3.max, box3.min).multiplyScalar(0.5);
+
+	  console.log('center: ' + center.x + ', ' + center.y + ', ' + center.z);
+	  console.log('size: ' + size.x + ', ' + size.y + ', ' + size.z);
+
+	  // uniform scaling according to objSize
+	  var objSize = findMax(size);
+	  var scaleSet = targetSize / objSize;
+
+	  var theObject = new THREE.Object3D();
+	  theObject.add(object);
+	  object.scale.set(scaleSet, scaleSet, scaleSet);
+	  object.position.set(-center.x * scaleSet, -center.y * scaleSet + size.y / 2 * scaleSet, -center.z * scaleSet);
+
+	  return theObject;
+
+
+	  // helper function
+	  function findMax(v) {
+	    if (v.x > v.y) {
+	      return v.x > v.z ? v.x : v.z;
+	    } else { // v.y > v.x
+	      return v.y > v.z ? v.y : v.z;
+	    }
+	  }
+
+	}
+
+function onWindowResize() {
+
+  var ww = $("#container").innerWidth();
+  var hh = $("#container").innerHeight();
+
+  camera.aspect = ww / hh;
+  camera.updateProjectionMatrix();
+  renderer.setSize(ww, hh);
+
+  camera2.aspect = ww / hh;
+  camera2.updateProjectionMatrix();
+  renderer2.setSize(ww, hh);
+
+}
+
+function Matrix4Update(newPos, newDir) {
+
+  var localX = newDir.clone();
+  var localY = new THREE.Vector3(changeX, changeY, changeZ);
+  var localZ = new THREE.Vector3();
+  localZ.crossVectors(localX, localY);
+  car.matrix.makeBasis(localX, localY, localZ);
+  car.matrix.setPosition(newPos);
+  car.matrixAutoUpdate = false;
+  
+}
+
+function moveOnNy() {
+
+  var newPos = car.localToWorld(new THREE.Vector3(go, 0, 0));
+
+  var newDir = vP.normalize();
+  newDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), change);
+  Matrix4Update(newPos, newDir);
+
+  cameraOffset = car.localToWorld(new THREE.Vector3(-20, 10, 0));
+  camera.position.set(cameraOffset.x, cameraOffset.y, cameraOffset.z);
+  upTemp.set(0, 1, 0);
+  camera.up.copy(upTemp);
+  camera.lookAt(newPos);
+
+}
+
+function animate() {
+
+  keyboard.update();
+
+  if (keyboard.pressed("W")) {
+    go += 5;
+  }
+
+  if (keyboard.pressed("A")) {
+    change += 0.1;
+  }
+
+  if (keyboard.pressed("D")) {
+    change += -0.1;
+  }
+
+    moveOnNy();
+
+
+  go = 0;
+  change = 0;
+  controls.update();
+  requestAnimationFrame(animate);
+  render();
+
+}
+
+function render() {
+  renderer.render(scene, camera);
+  renderer2.render(scene, camera2);
+}
+
+window.focus();
+
+</script>
+</body>
+
+</html>
