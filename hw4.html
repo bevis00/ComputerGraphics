@@ -139,15 +139,15 @@ function init() {
   //THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
 
   var mtlLoader = new THREE.MTLLoader();
-  //mtlLoader.setPath('resources/');
-  mtlLoader.load('https://bevis00.github.io/obj-resources/cars/1967-shelby-ford-mustang/1967-shelby-ford-mustang.mtl', function(materials) {
+  mtlLoader.setPath('../obj-resources/cars/1967-shelby-ford-mustang/');
+  mtlLoader.load('1967-shelby-ford-mustang.mtl', function(materials) {
 
     materials.preload();
 
     var objLoader = new THREE.OBJLoader();
     objLoader.setMaterials(materials);
-    //objLoader.setPath('resources/');
-    objLoader.load('https://bevis00.github.io/obj-resources/cars/1967-shelby-ford-mustang/1967-shelby-ford-mustang.obj', function(object) {
+    objLoader.setPath('../obj-resources/cars/1967-shelby-ford-mustang/');
+    objLoader.load('1967-shelby-ford-mustang.obj', function(object) {
 
       var theObject = unitize(object, 30);
 			theObject.rotation.y = -Math.PI / 2;
