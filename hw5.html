@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+</style>
+</head>
+
+<body> 
+<div id="info"> <br>Homework 5
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+<script>
+
+var camera, scene, renderer, mesh, light, controls;
+var keyboard = new KeyboardState();
+var turn = true;
+var angle = 0;
+var desk = new THREE.Object3D();
+var chair = new THREE.Object3D();
+var deskLamp = new THREE.Object3D();
+var pen1 = new THREE.Object3D();
+var raycaster = new THREE.Raycaster();
+var pickables = [];
+var mouse = new THREE.Vector2();
+var spotLight;
+var pointLight;
+
+class Button {
+  constructor(color, name) {
+    this.on = false;
+    this.hsl = color.getHSL();
+    this.obj = this.makeButton(name);
+  }
+
+  get isOn() {
+    return this.on;
+  }
+
+  toggle() {
+    this.on = !this.on;
+    this.update();
+  }
+
+  update() {
+    if (this.on) {
+      this.obj.scale.set(1, 0.97, 1);
+      this.obj.children[0].material.color.setHSL(this.hsl.h, 0, 1);
+    } else {
+      this.obj.scale.set(1, 1, 1);
+      this.obj.children[0].material.color.setHSL(this.hsl.h, this.hsl.s, this.hsl.l);
+    }
+  }
+
+  makeButton(name) {
+    let mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2),
+      new THREE.MeshLambertMaterial());
+    let button = new THREE.Object3D();
+    button.add(mesh);
+    mesh.material.color.setHSL(this.hsl.h, this.hsl.s, this.hsl.l);
+    mesh.position.x = 15;
+    mesh.position.y = 34.4;
+    button.name = name; // a string
+    return button;
+  }
+
+}
+
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+  camera.position.set(-14, 110, 36);
+
+  var light = new THREE.AmbientLight(0x303030); // soft white light
+  scene.add(light);
+
+  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  scene.add(gridXZ);
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  ///////////////////////////////////////////////////////////
+
+  var texture = new THREE.TextureLoader();
+  texture.setCrossOrigin('');
+
+  var material = new THREE.MeshPhongMaterial({
+    map: texture.load('https://i.imgur.com/6kd6HaE.jpg')
+  });
+
+  var deskBody = new THREE.Mesh(new THREE.BoxGeometry(60, 5, 40), material);
+  deskBody.position.set(0, 30, 0);
+
+  var deskLeg1 = new THREE.Mesh(new THREE.BoxGeometry(5, 30, 5), material);
+  deskLeg1.position.set(-25, 15, -15);
+
+  var deskLeg2 = deskLeg1.clone();
+  deskLeg2.position.set(25, 15, -15);
+
+  var deskLeg3 = deskLeg1.clone();
+  deskLeg3.position.set(-25, 15, 15);
+
+  var deskLeg4 = deskLeg1.clone();
+  deskLeg4.position.set(25, 15, 15);
+  desk.add(deskBody, deskLeg1, deskLeg2, deskLeg3, deskLeg4);
+
+  desk.traverse (
+   function (mesh) {
+     if (mesh instanceof THREE.Mesh) {
+         mesh.castShadow = true;
+         mesh.receiveShadow = true;
+      }
+    }
+  );
+
+  scene.add(desk);
+
+  ///////////////////////////////////////////////////////////
+
+  ////////////// model //////////////
+
+  var onProgress = function(xhr) {
+    if (xhr.lengthComputable) {
+      var percentComplete = xhr.loaded / xhr.total * 100;
+      console.log(Math.round(percentComplete, 2) + '% downloaded');
+    }
+  };
+
+  var onError = function(xhr) {};
+
+  //THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
+
+  var mtlLoader = new THREE.MTLLoader();
+  mtlLoader.setPath('../obj-resources/furniture/study-chair/');
+  mtlLoader.load('chair.mtl', function(materials) {
+
+    materials.preload();
+
+    var objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.setPath('../obj-resources/furniture/study-chair/');
+    objLoader.load('chair.obj', function(object) {
+
+      var theObject = unitize(object, 40);
+      theObject.rotation.y = Math.PI / 2;
+      chair.add(theObject);
+      scene.add(chair);
+
+      //scene.add(new THREE.BoxHelper(theObject));
+
+      ////////////// MATERIAL ADJUSTMENT for porsche //////////////
+      // transparent window: double-side fix
+      object.traverse(
+        function(mesh) {
+          if (mesh instanceof THREE.Mesh) {
+            mesh.material.side = THREE.DoubleSide;
+          }
+        });
+
+
+    }, onProgress, onError);
+
+  });
+
+  chair.position.set(0, 0, 30);
+
+  chair.receiveShadow = true;
+  chair.castShadow = true;
+
+  ///////////////////////////////
+
+  ///////////////////////////////////////////////////////////
+
+  ////////////// model //////////////
+
+  var onProgress = function(xhr) {
+    if (xhr.lengthComputable) {
+      var percentComplete = xhr.loaded / xhr.total * 100;
+      console.log(Math.round(percentComplete, 2) + '% downloaded');
+    }
+  };
+
+  var onError = function(xhr) {};
+
+  //THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
+
+  var mtlLoader = new THREE.MTLLoader();
+  mtlLoader.setPath('../obj-resources/furniture/desk-lamp/');
+  mtlLoader.load('536 Lamp.mtl', function(materials) {
+
+    materials.preload();
+
+    var objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.setPath('../obj-resources/furniture/desk-lamp/');
+    objLoader.load('536 Lamp.obj', function(object) {
+
+      var theObject = unitize(object, 20);
+      deskLamp.add(theObject);
+      scene.add(deskLamp);
+
+      //scene.add(new THREE.BoxHelper(theObject));
+
+      ////////////// MATERIAL ADJUSTMENT for porsche //////////////
+      // transparent window: double-side fix
+      object.traverse(
+        function(mesh) {
+          if (mesh instanceof THREE.Mesh) {
+            mesh.material.side = THREE.DoubleSide;
+          }
+        });
+
+
+    }, onProgress, onError);
+
+  });
+
+  deskLamp.position.set(-18, 32.5, -8);
+  deskLamp.receiveShadow = true;
+  deskLamp.castShadow = true;
+
+  ///////////////////////////////
+
+  ///////////////////////////////////////////////////////////
+
+  var penholder = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 10, 32, 1, true), new THREE.MeshLambertMaterial({
+    color: 0x38548c,
+    transparent: true,
+    opacity: 0.7,
+    side: THREE.DoubleSide
+  }));
+  penholder.position.set(-5, 37.5, 5);
+  penholder.receiveShadow = true;
+  penholder.castShadow = true;
+  var bottom = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.1, 32), new THREE.MeshLambertMaterial({
+    color: 0x38548c
+  }));
+  bottom.position.y = -5;
+  bottom.receiveShadow = true;
+  bottom.castShadow = true;
+  penholder.add(bottom);
+  scene.add(penholder);
+
+  ///////////////////////////////////////////////////////////
+
+  var pencialBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 5, 32), new THREE.MeshLambertMaterial({
+    color: 'yellow'
+  }));
+  pencialBody.position.set(-6, 35, 5);
+  pencialBody.receiveShadow = true;
+  pencialBody.castShadow = true;
+  var pencialhead1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.3, 1, 32), new THREE.MeshLambertMaterial({
+    color: 0x84531f
+  }));
+  pencialhead1.position.y = 3;
+  pencialhead1.receiveShadow = true;
+  pencialhead1.castShadow = true;
+  var pencialhead2 = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.1, 0.5, 32), new THREE.MeshLambertMaterial({
+    color: 'black'
+  }));
+  pencialhead2.position.y = 3.75;
+  pencialhead2.receiveShadow = true;
+  pencialhead2.castShadow = true;
+  pencialBody.add(pencialhead1, pencialhead2);
+  pencialBody.rotation.z = Math.PI / 6;
+  scene.add(pencialBody);
+  
+  ////////////////////////////////////////////////////////////
+  
+  button = new Button(new THREE.Color (0x12ffff), 'cyan');
+  scene.add(button.obj);
+  pickables.push(button.obj);
+
+  button.receiveShadow = true;
+  button.castShadow = true;
+
+  button2 = new Button(new THREE.Color (0xff12ff), 'purple');
+  scene.add(button2.obj);
+  button2.obj.position.z = 4;
+  pickables.push(button2.obj);
+
+  button2.receiveShadow = true;
+  button2.castShadow = true;
+
+  var remoteControl = new THREE.Mesh(new THREE.BoxGeometry(8, 2, 3), new THREE.MeshLambertMaterial({color: 0x636363}));
+  remoteControl.rotation.y = Math.PI/2;
+  remoteControl.position.set(15, 33, 2);
+
+  remoteControl.receiveShadow = true;
+  remoteControl.castShadow = true;
+  scene.add(remoteControl);
+  
+  ///////////////////////////////////////////////////////////
+
+  spotLight = new THREE.SpotLight( 0xffffff );
+  spotLight.position.set( 0, 150, 0 );
+  spotLight.castShadow = true;
+  spotLight.angle = 0.25;
+
+  spotLight.shadow.mapSize.width = 1024;
+  spotLight.shadow.mapSize.height = 1024;
+
+  spotLight.shadow.camera.near = 500;
+  spotLight.shadow.camera.far = 4000;
+  spotLight.shadow.camera.fov = 30;
+  spotLight.visible = false;
+  scene.add( spotLight );
+
+  var spotLightHelper = new THREE.SpotLightHelper( spotLight );
+  scene.add( spotLightHelper );
+
+  pointLight = new THREE.PointLight( 0xed8600, 1, 100 );
+  pointLight.position.set( -18, 47, -8 );
+  pointLight.visible = false;
+
+  pointLight.castShadow = true;
+
+  pointLight.shadow.mapSize.width = 1024;
+  pointLight.shadow.mapSize.height = 1024;
+
+  pointLight.shadow.camera.near = 500;
+  pointLight.shadow.camera.far = 4000;
+  pointLight.shadow.camera.fov = 30;
+  scene.add( pointLight );
+
+  var sphereSize = 1;
+  var pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
+  scene.add( pointLightHelper );
+
+  ///////////////////////////////////////////////////////////
+  
+  document.body.appendChild(renderer.domElement);
+  document.addEventListener('mousedown', onDocumentMouseDown, false);
+  window.addEventListener('resize', onWindowResize, false);
+
+
+}
+
+function onDocumentMouseDown(event) {
+
+  event.preventDefault();
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // find intersections
+  raycaster.setFromCamera(mouse, camera);
+  var intersects = raycaster.intersectObjects(pickables, true);
+  if (intersects.length > 0) {
+    let picked = intersects[0].object.parent.name;
+    switch (picked) {
+    case 'cyan':
+    	button.toggle();
+    	spotLight.visible = !spotLight.visible;
+      break;
+    case 'purple':
+    	button2.toggle();
+    	pointLight.visible = !pointLight.visible;
+      break;
+    }
+  }
+
+}
+
+function onWindowResize() {
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+}
+
+
+function unitize(object, targetSize) {
+
+  // find bounding box of 'object'
+  var box3 = new THREE.Box3();
+  box3.setFromObject(object);
+  var size = new THREE.Vector3();
+  size.subVectors(box3.max, box3.min);
+  var center = new THREE.Vector3();
+  center.addVectors(box3.max, box3.min).multiplyScalar(0.5);
+
+  console.log('center: ' + center.x + ', ' + center.y + ', ' + center.z);
+  console.log('size: ' + size.x + ', ' + size.y + ', ' + size.z);
+
+  // uniform scaling according to objSize
+  var objSize = findMax(size);
+  var scaleSet = targetSize / objSize;
+
+  var theObject = new THREE.Object3D();
+  theObject.add(object);
+  object.scale.set(scaleSet, scaleSet, scaleSet);
+  object.position.set(-center.x * scaleSet, -center.y * scaleSet + size.y / 2 * scaleSet, -center.z * scaleSet);
+
+  return theObject;
+
+  // helper function
+  function findMax(v) {
+    if (v.x > v.y) {
+      return v.x > v.z ? v.x : v.z;
+    } else { // v.y > v.x
+      return v.y > v.z ? v.y : v.z;
+    }
+  }
+
+}
+
+function animate() {
+  controls.update();
+
+  requestAnimationFrame(animate);
+  render();
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
+
+</script>
+</body>
+
+</html>
