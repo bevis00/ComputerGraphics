@@ -35,6 +35,7 @@
     - 操作坦克，將標靶擊落
     - [bonus] 分隔畫面: god's eye view 以及 坦克操作員視角（以便瞄準）
 
+
 ### Homework 4 : [OBJ loader, drive](https://bevis00.github.io/ComputerGraphics/hw4.html)
 - 技術要求
   - 在網路上找合適的車輛模型 (OBJ/MTL format)
@@ -44,3 +45,12 @@
   - 實作collision detection程式，使得車輛與障礙物相撞時立即停止。使用者須自行將車輛駛出。請務必在所錄的animated.gif中示範此效果
   - 螢幕分割成左右兩viewports: 一邊為上帝視角 (god's eye view), 一編為駕駛的第三人稱視角 (third person view)
     
+
+### Homework 5 : [Class, Raycaster, Shadow Map](https://bevis00.github.io/ComputerGraphics/hw5.html)
+- 技術要求
+  - 在網路上找合適的檯燈模型 (OBJ/MTL format)
+  - 利用合適的loader將其匯入three.js 場景中，以適當大小呈現
+  - 利用BoxGeometry以及合適的材質做出電腦桌
+  - 書桌上放置檯燈，燈光遙控器，以及筆筒(內有筆)
+  - 遙控器上有至少兩個按鈕，以控制檯燈以及室內燈光
+  - 開關須以class實作，由滑鼠點按觸動
