@@ -332,10 +332,10 @@ function init() {
   spotLight.shadow.camera.fov = 30;
   spotLight.visible = false;
   scene.add( spotLight );
-
+  /*
   var spotLightHelper = new THREE.SpotLightHelper( spotLight );
   scene.add( spotLightHelper );
-
+  */
   pointLight = new THREE.PointLight( 0xed8600, 1, 100 );
   pointLight.position.set( -18, 47, -8 );
   pointLight.visible = false;
@@ -351,9 +351,10 @@ function init() {
   scene.add( pointLight );
 
   var sphereSize = 1;
+  /*
   var pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
   scene.add( pointLightHelper );
-
+  */
   ///////////////////////////////////////////////////////////
   
   document.body.appendChild(renderer.domElement);
