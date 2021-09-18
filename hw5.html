@@ -47,8 +47,9 @@ var pointLight;
 
 class Button {
   constructor(color, name) {
+    this.hsl = {};
+    color.getHSL(this.hsl);
     this.on = false;
-    this.hsl = color.getHSL();
     this.obj = this.makeButton(name);
   }
 
